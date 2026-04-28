@@ -59,4 +59,11 @@ public class LobbyManager {
 	public void removeRoom(int roomId) {
 		rooms.remove(roomId);
 	}
+
+    // broadcast a message to all clients in the lobby
+	public void broadcastToLobby(String message) {
+    for (ClientHandler c : clients) {
+        c.sendMessage(message);
+    }
+	}
 }
