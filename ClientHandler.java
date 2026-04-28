@@ -112,7 +112,7 @@ public class ClientHandler implements Runnable {
                 if (currentRoom != null && !arg.isEmpty()) {
                     try {
                         int column = Integer.parseInt(arg);
-                        currentRoom.makeMove(this, column);
+                        //currentRoom.makeMove(this, column); //placeholder for move logic
                     } catch (NumberFormatException e) {
                         out.println("Invalid column number.");
                     }
@@ -123,6 +123,13 @@ public class ClientHandler implements Runnable {
             case "QUIT":
                 out.println("Goodbye!");
                 closeConnection();
+                break;
+            case "LOBBY_CHAT":
+                if (!arg.isEmpty()) {
+                    lobbyManager.broadcastToLobby(clientName + ": " + arg);
+                } else {
+                    out.println("Usage: LOBBY_CHAT <message>");
+                }
                 break;
             default:
                 out.println("Unknown command: " + cmd);
