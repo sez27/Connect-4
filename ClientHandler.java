@@ -69,21 +69,29 @@ public class ClientHandler implements Runnable {
                 break;
             case "CREATE_ROOM":
                 if (currentRoom == null) {
-                    currentRoom = lobbyManager.createRoom(this);
-                    out.println("Room created. Waiting for another player...");
+                    String password = arg.isEmpty() ? null : arg;
+                    GameRoom room = lobbyManager.createRoom(this, password);
+                    currentRoom = room;
+                    out.println("Room created (id " + room.getId() + "). Waiting for another player..." + (room.isPrivate() ? " (private)" : ""));
                 } else {
                     out.println("You are already in a room.");
                 }
                 break;
             case "JOIN_ROOM":
                 if (currentRoom == null && !arg.isEmpty()) {
+                    // may include id and optional password: "<id> [password]"
+                    String[] joinParts = arg.split(" ", 2);
                     try {
-                        int roomId = Integer.parseInt(arg);
-                        currentRoom = lobbyManager.joinRoom(roomId, this);
-                        if (currentRoom != null) {
+                        int roomId = Integer.parseInt(joinParts[0]);
+                        String password = joinParts.length > 1 ? joinParts[1] : null;
+                        GameRoom room = lobbyManager.joinRoom(roomId, this, password);
+                        if (room != null) {
+                            currentRoom = room;
                             out.println("Joined room " + roomId + ". Game starting!");
                         } else {
-                            out.println("Room not found or full.");
+                            if (!lobbyManager.listRooms().contains("[" + roomId + "]")) {
+                                out.println("Room not found.");
+                            }
                         }
                     } catch (NumberFormatException e) {
                         out.println("Invalid room ID.");

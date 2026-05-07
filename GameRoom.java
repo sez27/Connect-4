@@ -7,12 +7,17 @@ public class GameRoom {
 	private ClientHandler player2;
 	private boolean started = false;
 
-    // creates a new game room with unique id and the client who creates the room is the first player in the room
-	public GameRoom(int id, ClientHandler owner, LobbyManager lobbyManager) {
+	private final boolean isPrivate;
+	private final String password; //optional password for private rooms
+
+	// constructor with optional password
+	public GameRoom(int id, ClientHandler owner, LobbyManager lobbyManager, String password) {
 		this.id = id;
 		this.lobbyManager = lobbyManager;
 		this.player1 = owner;
 		if (owner != null) owner.setCurrentRoom(this);
+		this.password = (password != null && !password.isEmpty()) ? password : null;
+		this.isPrivate = this.password != null;
 	}
 
     // returns the room id
@@ -31,6 +36,17 @@ public class GameRoom {
     // checks if the room has two players and is full
 	public synchronized boolean isFull() {
 		return player1 != null && player2 != null;
+	}
+
+	// indicates if room is private
+	public boolean isPrivate() {
+		return isPrivate;
+	}
+
+	// simple password check
+	public boolean verifyPassword(String attempt) {
+		if (!isPrivate) return true;
+		return attempt != null && attempt.equals(password);
 	}
 
     // adds a player to the room, if the room is full, sends a message to the client and does not add them
