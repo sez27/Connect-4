@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.*;
 
 public class ClientHandler implements Runnable {
     private Socket socket;
@@ -111,9 +110,18 @@ public class ClientHandler implements Runnable {
                 break;
             case "CHAT":
                 if (currentRoom != null && !arg.isEmpty()) {
-                    currentRoom.broadcastMessage(clientName + ": " + arg, this);
+                    String message = clientName + ": " + arg;
+                    currentRoom.broadcastMessage(message, this);
+                    currentRoom.recordChatMessage(clientName, arg);  // Persist chat message
                 } else {
                     out.println("You must be in a room to chat.");
+                }
+                break;
+            case "PLAY_AGAIN":
+                if (currentRoom != null) {
+                    currentRoom.resetForNewGame();
+                } else {
+                    out.println("Cannot start new game or no room joined.");
                 }
                 break;
             case "MOVE":

@@ -1,8 +1,10 @@
 import java.util.*;
+import java.util.concurrent.*;
 
 public class GameRoom {
 	private final int id;
 	private final LobbyManager lobbyManager;
+	private PersistenceManager persistenceManager;
 	private ClientHandler player1;
 	private ClientHandler player2;
 	private boolean started = false;
@@ -13,11 +15,21 @@ public class GameRoom {
 	private GameState gameState;
 	private Timer gameTimer;
 	private boolean gameEnded;
+	
+	private long createdAt;
+	private List<Move> moveHistory = new CopyOnWriteArrayList<>();
+	private List<ChatMessage> chatHistory = new CopyOnWriteArrayList<>();
 
 	// Constructor with optional password.
 	public GameRoom(int id, ClientHandler owner, LobbyManager lobbyManager, String password) {
+		this(id, owner, lobbyManager, password, null);
+	}
+
+	// Constructor with persistence manager.
+	public GameRoom(int id, ClientHandler owner, LobbyManager lobbyManager, String password, PersistenceManager persistence) {
 		this.id = id;
 		this.lobbyManager = lobbyManager;
+		this.persistenceManager = persistence;
 		this.player1 = owner;
 		if (owner != null) owner.setCurrentRoom(this);
 		this.password = (password != null && !password.isEmpty()) ? password : null;
@@ -25,6 +37,7 @@ public class GameRoom {
 		this.gameState = new GameState();
 		this.gameTimer = new Timer();
 		this.gameEnded = false;
+		this.createdAt = System.currentTimeMillis();
 	}
 
     // Gets the room id.
@@ -152,6 +165,7 @@ public class GameRoom {
 		}
 
 		broadcastMessage(player.getClientName() + " placed a piece in column " + column, null);
+		recordMove(playerId, column);  // Persist move
 		broadcastBoard();
 
 		if (gameState.checkWin(playerId)) {
@@ -188,6 +202,7 @@ public class GameRoom {
 		broadcastMessage(playerName + " didn't move in time! Auto-placed piece in column " + column, null);
 
 		if (gameState.makeMove(column, playerId)) {
+			recordMove(playerId, column);  // Persist timeout move
 			broadcastBoard();
 
 			if (gameState.checkWin(playerId)) {
@@ -221,6 +236,7 @@ public class GameRoom {
 			broadcastMessage("GAME OVER: " + winnerName + " (Player " + winnerId + ") wins!", null);
 		}
 
+		broadcastMessage("Type PLAY_AGAIN to start a new game, or LEAVE_ROOM to return to lobby.", null);
 		broadcastBoard();
 	}
 
@@ -245,5 +261,80 @@ public class GameRoom {
 	private void broadcastBoard() {
 		String boardJSON = gameState.getBoardAsJSON();
 		broadcastMessage("BOARD:" + boardJSON, null);
+	}
+
+	// ===== PERSISTENCE METHODS =====
+
+	public long getCreatedAt() {
+		return createdAt;
+	}
+
+	public List<Move> getMoveHistory() {
+		return new ArrayList<>(moveHistory);
+	}
+
+	public List<ChatMessage> getChatHistory() {
+		return new ArrayList<>(chatHistory);
+	}
+
+	public boolean isGameStarted() {
+		return started;
+	}
+
+	public ClientHandler getPlayer1() {
+		return player1;
+	}
+
+	public ClientHandler getPlayer2() {
+		return player2;
+	}
+
+	public String getBoardAsJSON() {
+		return gameState.getBoardAsJSON();
+	}
+
+	public GameState getGameState() {
+		return gameState;
+	}
+
+	public void setPersistenceManager(PersistenceManager persistence) {
+		this.persistenceManager = persistence;
+	}
+
+	// Record a chat message in history and persist it
+	public void recordChatMessage(String sender, String message) {
+		ChatMessage chatMsg = new ChatMessage(sender, message, System.currentTimeMillis());
+		chatHistory.add(chatMsg);
+		if (persistenceManager != null) {
+			persistenceManager.saveChatMessage(id, sender, message);
+		}
+	}
+
+	// Record a move in history and persist it
+	private void recordMove(int player, int column) {
+		Move move = new Move(player, column, System.currentTimeMillis());
+		moveHistory.add(move);
+		if (persistenceManager != null) {
+			persistenceManager.saveGameRoom(this);
+		}
+	}
+
+	/**
+	 * Reset game for "play again" - clear board and continue in same room.
+	 */
+	public synchronized void resetForNewGame() {
+		started = false;
+		gameEnded = false;
+		gameState = new GameState();
+		gameTimer = new Timer();
+		moveHistory.clear();
+		// Keep chat history for reference
+		
+		if (isFull()) {
+			broadcastMessage("Starting new game in room " + id + "!", null);
+			startGame();
+		} else {
+			broadcastMessage("Waiting for opponent to start new game...", null);
+		}
 	}
 }
