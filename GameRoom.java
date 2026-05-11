@@ -125,6 +125,7 @@ public class GameRoom {
 		if (player1 != null) player1.sendMessage("You are player 1 (RED)");
 		if (player2 != null) player2.sendMessage("You are player 2 (YELLOW)");
 		broadcastBoard();
+		if (player1 != null) player1.sendMessage("YOUR_TURN:");
 		gameTimer.startTimer(this, GameState.getPlayer1());
 	}
 
@@ -234,6 +235,17 @@ public class GameRoom {
 				(player1 != null ? player1.getClientName() : "Player 1") :
 				(player2 != null ? player2.getClientName() : "Player 2");
 			broadcastMessage("GAME OVER: " + winnerName + " (Player " + winnerId + ") wins!", null);
+			
+			// Increment win counter
+			if (winnerId == GameState.getPlayer1()) {
+				winsPlayer1++;
+				if (player1 != null) player1.sendMessage("PLAYER_WINS:" + winsPlayer1);
+				if (player2 != null) player2.sendMessage("OPPONENT_WINS:" + winsPlayer1);
+			} else {
+				winsPlayer2++;
+				if (player2 != null) player2.sendMessage("PLAYER_WINS:" + winsPlayer2);
+				if (player1 != null) player1.sendMessage("OPPONENT_WINS:" + winsPlayer2);
+			}
 		}
 
 		broadcastMessage("Type PLAY_AGAIN to start a new game, or LEAVE_ROOM to return to lobby.", null);
@@ -263,8 +275,7 @@ public class GameRoom {
 		broadcastMessage("BOARD:" + boardJSON, null);
 	}
 
-	// ===== PERSISTENCE METHODS =====
-
+	// Persistence methods
 	public long getCreatedAt() {
 		return createdAt;
 	}
@@ -319,9 +330,7 @@ public class GameRoom {
 		}
 	}
 
-	/**
-	 * Reset game for "play again" - clear board and continue in same room.
-	 */
+	// New game
 	public synchronized void resetForNewGame() {
 		started = false;
 		gameEnded = false;
@@ -337,4 +346,15 @@ public class GameRoom {
 			broadcastMessage("Waiting for opponent to start new game...", null);
 		}
 	}
+
+	private int winsPlayer1 = 0;  // Track wins in this room for Player 1
+	private int winsPlayer2 = 0;  // Track wins in this room for Player 2
+
+	public int getWinsPlayer1() {
+    return winsPlayer1;
+}
+
+	public int getWinsPlayer2() {
+    return winsPlayer2;
+}
 }
