@@ -104,7 +104,7 @@ public class ClientHandler implements Runnable {
                 if (currentRoom != null) {
                     currentRoom.removePlayer(this);
                     currentRoom = null;
-                    out.println("Left the room. Back to lobby.");
+                    out.println("You left the room. Back to lobby.");
                 } else {
                     out.println("You are not in a room.");
                 }
@@ -120,7 +120,7 @@ public class ClientHandler implements Runnable {
                 if (currentRoom != null && !arg.isEmpty()) {
                     try {
                         int column = Integer.parseInt(arg);
-                        //currentRoom.makeMove(this, column); //placeholder for move logic
+                        currentRoom.makeMove(this, column);
                     } catch (NumberFormatException e) {
                         out.println("Invalid column number.");
                     }
