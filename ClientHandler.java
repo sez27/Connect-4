@@ -112,7 +112,7 @@ public class ClientHandler implements Runnable {
                 if (currentRoom != null && !arg.isEmpty()) {
                     String message = clientName + ": " + arg;
                     currentRoom.broadcastMessage(message, this);
-                    currentRoom.recordChatMessage(clientName, arg);  // Persist chat message
+                    currentRoom.recordChatMessage(clientName, arg);
                 } else {
                     out.println("You must be in a room to chat.");
                 }
@@ -140,7 +140,7 @@ public class ClientHandler implements Runnable {
                 out.println("Goodbye!");
                 closeConnection();
                 break;
-            case "LOBBY_CHAT":
+            case "ALL":
                 if (!arg.isEmpty()) {
                     lobbyManager.broadcastToLobby(clientName + ": " + arg);
                 } else {
